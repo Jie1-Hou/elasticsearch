@@ -1,0 +1,25 @@
+"Test the switchfs directory wrapper":
+  - do:
+      indices.create:
+        index: switchfs-test
+        body:
+          settings:
+            index:
+              store.type: switchfs
+
+  - do:
+      index:
+        index:  switchfs-test
+        id:     1
+        body:   { foo: bar }
+
+  - do:
+      get:
+        index:  switchfs-test
+        id:     1
+
+  - match:   { _index:   switchfs-test }
+  - match:   { _type:    _doc }
+  - match:   { _id:      "1"}
+  - match:   { _version: 1}
+  - match:   { _source: { foo: bar }}
