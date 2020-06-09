@@ -33,6 +33,8 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.elasticsearch.common.settings.Setting;
 import org.elasticsearch.common.settings.Setting.Property;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.settings.IndexScopedSettings;
 import org.elasticsearch.core.internal.io.IOUtils;
 import org.elasticsearch.index.IndexModule;
 import org.elasticsearch.index.IndexSettings;
@@ -42,6 +44,7 @@ import org.elasticsearch.plugins.IndexStorePlugin;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -97,6 +100,27 @@ public class FsDirectoryFactory implements IndexStorePlugin.DirectoryFactory {
             default:
                 throw new AssertionError("unexpected built-in store type [" + type + "]");
         }
+    }
+
+    public static Directory newFSDirectory(final Settings nodeSettings, Path location) throws IOException {
+        IndexScopedSettings settings = new IndexScopedSettings(nodeSettings, IndexScopedSettings.BUILT_IN_INDEX_SETTINGS);
+        Set<String> preLoadExtensions = new HashSet<>(settings.get(IndexModule.INDEX_STORE_PRE_LOAD_SETTING));
+
+        Directory directory = new SimpleFSDirectory(location);
+        if (preLoadExtensions.isEmpty()) {
+            return directory;
+        }
+        if (preLoadExtensions.contains("*")) {
+            return directory;
+        }
+
+        final int countName = location.getNameCount();
+        final Path dataDirectory = Paths.get(location.getRoot().toString(),location.subpath(0, countName - 4).toString(), "indices.io");
+        Path locationSwitchfs = Paths.get(dataDirectory.toString(), location.subpath(countName - 3, countName).toString());
+        if(!locationSwitchfs.toFile().exists())
+            locationSwitchfs = location;
+
+        return new FileSwitchDirectory(preLoadExtensions, directory, new SimpleFSDirectory(locationSwitchfs), true);
     }
 
     public static MMapDirectory setPreload(MMapDirectory mMapDirectory, LockFactory lockFactory,
