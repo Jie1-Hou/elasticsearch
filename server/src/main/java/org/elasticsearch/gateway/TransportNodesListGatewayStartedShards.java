@@ -132,7 +132,7 @@ public class TransportNodesListGatewayStartedShards extends
                         if (shardPath == null) {
                             throw new IllegalStateException(shardId + " no shard path found");
                         }
-                        Store.tryOpenIndex(shardPath.resolveIndex(), shardId, nodeEnv::shardLock, logger);
+                        Store.tryOpenIndex(shardPath.resolveIndex(), settings, shardId, nodeEnv::shardLock, logger);
                     } catch (Exception exception) {
                         final ShardPath finalShardPath = shardPath;
                         logger.trace(() -> new ParameterizedMessage(
