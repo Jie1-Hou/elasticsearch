@@ -64,6 +64,7 @@ import org.elasticsearch.common.lucene.store.ByteArrayIndexInput;
 import org.elasticsearch.common.lucene.store.InputStreamIndexInput;
 import org.elasticsearch.common.settings.Setting;
 import org.elasticsearch.common.settings.Setting.Property;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.AbstractRefCounted;
 import org.elasticsearch.common.util.concurrent.RefCounted;
@@ -447,10 +448,10 @@ public class Store extends AbstractIndexShardComponent implements Closeable, Ref
      * segment infos and possible corruption markers. If the index can not
      * be opened, an exception is thrown
      */
-    public static void tryOpenIndex(Path indexLocation, ShardId shardId, NodeEnvironment.ShardLocker shardLocker,
+    public static void tryOpenIndex(Path indexLocation, final Settings nodeSettings, ShardId shardId, NodeEnvironment.ShardLocker shardLocker,
                                         Logger logger) throws IOException, ShardLockObtainFailedException {
         try (ShardLock lock = shardLocker.lock(shardId, "open index", TimeUnit.SECONDS.toMillis(5));
-             Directory dir = new SimpleFSDirectory(indexLocation)) {
+             Directory dir = FsDirectoryFactory.newFSDirectory(nodeSettings, indexLocation)) {
             failIfCorrupted(dir);
             SegmentInfos segInfo = Lucene.readSegmentInfos(dir);
             logger.trace("{} loaded segment info [{}]", shardId, segInfo);
